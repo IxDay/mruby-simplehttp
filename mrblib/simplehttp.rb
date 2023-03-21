@@ -1,4 +1,5 @@
 class SimpleHttp
+
   DEFAULTPORT = 80
   DEFAULTHTTPSPORT = 443
   HTTP_VERSION = "HTTP/1.0"
@@ -47,13 +48,13 @@ class SimpleHttp
     if uv_module_exist?
       @use_uv = true
     end
-    
+
     if @use_socket
       # nothing
     elsif @use_uv
       ip = ""
       UV::getaddrinfo(address, "http", ai_family: :ipv4) do |x, info|
-        if info 
+        if info
           ip = info.addr
         end
       end
@@ -96,24 +97,34 @@ class SimpleHttp
       @uri[:path] = "/" + @uri[:path]
     end
     request_header = create_request_header(method.upcase.to_s, req)
-    response_text = send_request(request_header, &b)
-    SimpleHttpResponse.new(response_text)
+    SimpleHttpResponse.new(send_request(request_header, &b))
+  end
+
+  def get_headers(socket)
+    headers = ""
+    socket.each_char do |char|
+      headers << char
+      return headers if headers.end_with?(SimpleHttp::SEP * 2)
+    end
   end
 
   def send_request(request_header)
     response_text = ""
     if @uri[:scheme] == "unix"
-        socket = UNIXSocket.open(@uri[:file])
-        socket.write(request_header)
-        while (t = socket.read(READ_BUF_SIZE.to_i))
-          if block_given?
-            yield t
-            next
+      socket = UNIXSocket.open(@uri[:file])
+      socket.write(request_header)
+      response_text = get_headers(socket)
+      begin
+        if block_given?
+            yield SimpleHttpResponse.new(response_text), socket
+        else
+          while (t = socket.read(READ_BUF_SIZE.to_i))
+            response_text << t
           end
-          response_text << t
         end
+      ensure
         socket.close
-
+      end
     elsif @use_socket
       socket = TCPSocket.new(@uri[:address], @uri[:port])
       if @uri[:scheme] == "https"
@@ -132,7 +143,7 @@ class SimpleHttp
             yield chunk
             next
           end
-          
+
           response_text << chunk
         end
         ssl.close_notify
@@ -147,7 +158,7 @@ class SimpleHttp
             yield t
             next
           end
-                  
+
           response_text << t
         end
         socket.close
@@ -161,9 +172,9 @@ class SimpleHttp
               if block_given?
                 yield b.to_s
                 next
-              end    
-                      
-              response_text << b.to_s 
+              end
+
+              response_text << b.to_s
             end
           end
         else
@@ -283,5 +294,3 @@ class SimpleHttp
     end
   end
 end
-
-

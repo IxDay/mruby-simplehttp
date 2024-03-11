@@ -73,25 +73,14 @@ class SimpleHttp
     self
   end
 
-  def address; @uri[:address]; end
-  def port; @uri[:port]; end
+  def address = @uri[:address]
+  def port = @uri[:port]
 
-  def get(path = "/", **headers, &b)
-    request("GET", path, body, **headers, &b)
-  end
-
-  def post(path = "/", body = nil, **headers, &b)
-    request("POST", path, body, **headers, &b)
-  end
-
-  def put(path = "/", body = nil, **headers, &b)
-    request("PUT", path, body, **headers, &b)
-  end
-
+  def get(path = "/", **headers, &b) = request("GET", path, **headers, &b)
+  def post(path = "/", body = nil, **headers, &b) = request("POST", path, body, **headers, &b)
+  def put(path = "/", body = nil, **headers, &b) = request("PUT", path, body, **headers, &b)
   # https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request#answer-299696
-  def delete(path = "/", **headers, &b)
-    request("DELETE", path, body, **headers, &b)
-  end
+  def delete(path = "/", **headers, &b) = request("DELETE", path, **headers, &b)
 
   # private
   def request(method, path, body = nil, **headers, &b)
@@ -242,17 +231,17 @@ class SimpleHttp
       self
     end
 
-    def [](key); @response[key]; end
-    def []=(key, value);  @response[key] = value; end
+    def [](key) = @response[key]
+    def []=(key, value) =  @response[key] = value
 
-    def header; @response['header']; end
-    def headers; @headers; end
-    def body; @response['body']; end
-    def status; @response['status']; end
-    def code; @response['code']; end
-    def date; @response['date']; end
-    def content_type; @response['content-type']; end
-    def content_length; @response['content-length']; end
+    def header = @response['header']
+    def headers = @headers
+    def body = @response['body']
+    def status = @response['status']
+    def code = @response['code']
+    def date = @response['date']
+    def content_type = @response['content-type']
+    def content_length = @response['content-length']
 
     def each(&block)
       if block

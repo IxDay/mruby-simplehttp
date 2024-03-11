@@ -28,8 +28,9 @@ class SimpleHttp
       return false
   end
 
-  def initialize(scheme, address, port = nil)
-
+  def initialize(scheme, address, port= nil, sni: false)
+    # https://github.com/Mbed-TLS/mbedtls/issues/466
+    @sni = sni
     @uri = {}
     if scheme == 'unix'
       raise "UNIXSocket class not found" unless unix_socket_class_exist?
@@ -128,6 +129,7 @@ class SimpleHttp
         ssl.set_endpoint PolarSSL::SSL::SSL_IS_CLIENT
         ssl.set_rng ctr_drbg
         ssl.set_socket socket
+        ssl.set_hostname(@uri[:address]) if @sni
         ssl.handshake
         slice_by_buffer_size(request_header).each do |str|
           ssl.write str

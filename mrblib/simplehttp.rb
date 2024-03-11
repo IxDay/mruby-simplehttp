@@ -76,27 +76,32 @@ class SimpleHttp
   def address; @uri[:address]; end
   def port; @uri[:port]; end
 
-  def get(path = "/", req = nil, &b)
-    request("GET", path, req, &b)
+  def get(path = "/", **headers, &b)
+    request("GET", path, body, **headers, &b)
   end
 
-  def post(path = "/", req = nil, &b)
-    request("POST", path, req)
+  def post(path = "/", body = nil, **headers, &b)
+    request("POST", path, body, **headers, &b)
   end
 
-  def put(path = "/", req = nil, &b)
-    request("PUT", path, req)
+  def put(path = "/", body = nil, **headers, &b)
+    request("PUT", path, body, **headers, &b)
+  end
+
+  # https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request#answer-299696
+  def delete(path = "/", **headers, &b)
+    request("DELETE", path, body, **headers, &b)
   end
 
   # private
-  def request(method, path, req, &b)
+  def request(method, path, body = nil, **headers, &b)
     @uri[:path] = path
     if @uri[:path].nil?
       @uri[:path] = "/"
     elsif @uri[:path][0] != "/"
       @uri[:path] = "/" + @uri[:path]
     end
-    request_header = create_request_header(method.upcase.to_s, req)
+    request_header = create_request_header(method.upcase.to_s, body, headers)
     SimpleHttpResponse.new(send_request(request_header, &b))
   end
 
@@ -188,13 +193,11 @@ class SimpleHttp
     response_text
   end
 
-  def create_request_header(method, req)
-    req = {}  unless req
-    str = ""
-    body   = ""
-    str << sprintf("%s %s %s", method, @uri[:path], HTTP_VERSION) + SEP
+  def create_request_header(method, body, headers = {})
+    str = sprintf("%s %s %s", method, @uri[:path], HTTP_VERSION) + SEP
+    body ||= ""
     header = {}
-    req.each do |key,value|
+    headers.each do |key,value|
       if ! header[key.capitalize].nil?
         if header[key.capitalize].kind_of?(Array)
           header[key.capitalize] << value
@@ -208,10 +211,6 @@ class SimpleHttp
     header["Host"] = @uri[:address]  unless header.keys.include?("Host")
     header["Accept"] = DEFAULT_ACCEPT  unless header.keys.include?("Accept")
     header["Connection"] = "close"
-    if header["Body"]
-      body = header["Body"]
-      header.delete("Body")
-    end
     if ["POST", "PUT"].include?(method) && (not header.keys.include?("content-length".capitalize))
         header["Content-Length"] = (body || '').length
     end

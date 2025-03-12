@@ -244,6 +244,7 @@ class SimpleHttp
     def date = @response['date']
     def content_type = @response['content-type']
     def content_length = @response['content-length']
+    def success? = code.between?(200, 299)
 
     def each(&block)
       if block
